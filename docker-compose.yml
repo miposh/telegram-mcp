@@ -1,20 +1,22 @@
-version: '3.8'
-
 services:
   telegram-mcp:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: telegram-mcp
-    # Load environment variables from a .env file in the same directory
-    env_file:
-      - .env
-    # Keep stdin open and allocate a pseudo-TTY, crucial for stdio MCP servers
-    stdin_open: true
-    tty: true
-    # Optional: Uncomment the following lines to mount a local directory
-    # for persisting the Telegram session file if NOT using TELEGRAM_SESSION_STRING.
-    # Replace './telegram_sessions' with your desired host path.
-    # volumes:
-    #   - ./telegram_sessions:/app
-    restart: unless-stopped 
+    restart: unless-stopped
+    environment:
+      - MCP_TRANSPORT=http
+      - MCP_PORT=8000
+      - TELEGRAM_API_ID=${TELEGRAM_API_ID}
+      - TELEGRAM_API_HASH=${TELEGRAM_API_HASH}
+      - TELEGRAM_SESSION_STRING=${TELEGRAM_SESSION_STRING}
+    expose:
+      - "8000"
+    # Никаких ports: — наружу не выставляем
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: telegram-mcp-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - telegram-mcp
