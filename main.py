@@ -92,7 +92,11 @@ load_dotenv()
 TELEGRAM_API_ID = int(os.getenv("TELEGRAM_API_ID"))
 TELEGRAM_API_HASH = os.getenv("TELEGRAM_API_HASH")
 
-mcp = FastMCP("telegram")
+mcp = FastMCP(
+    "telegram",
+    host=os.getenv("MCP_HOST", "0.0.0.0"),
+    port=int(os.getenv("MCP_PORT", "8000")),
+)
 
 
 # ---------------------------------------------------------------------------
@@ -6161,7 +6165,11 @@ async def _main() -> None:
 
         print(f"Telegram client(s) started ({labels}). Running MCP server...", file=sys.stderr)
         # Use the asynchronous entrypoint instead of mcp.run()
-        await mcp.run_stdio_async()
+        transport = os.getenv("MCP_TRANSPORT", "stdio")
+        if transport == "http":
+            await mcp.run_streamable_http_async()
+        else:
+            await mcp.run_stdio_async()
     except Exception as e:
         print(f"Error starting client: {e}", file=sys.stderr)
         if isinstance(e, sqlite3.OperationalError) and "database is locked" in str(e):
@@ -6186,14 +6194,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    import os
-    transport = os.getenv("MCP_TRANSPORT", "stdio")
-    if transport == "http":
-        mcp.run(
-            transport="streamable-http",
-            host="0.0.0.0",
-            port=int(os.getenv("MCP_PORT", "8000")),
-            path="/mcp",
-        )
-    else:
-        mcp.run()
+    main()
