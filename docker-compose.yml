@@ -6,13 +6,12 @@ services:
     environment:
       - MCP_TRANSPORT=http
       - MCP_PORT=8000
+      - MCP_PATH=${MCP_PATH}
       - TELEGRAM_API_ID=${TELEGRAM_API_ID}
       - TELEGRAM_API_HASH=${TELEGRAM_API_HASH}
       - TELEGRAM_SESSION_STRING=${TELEGRAM_SESSION_STRING}
     expose:
       - "8000"
-    # Никаких ports: — наружу не выставляем
-
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: telegram-mcp-tunnel
