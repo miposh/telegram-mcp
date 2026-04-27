@@ -295,6 +295,30 @@ docker run -it --rm \
 *   Use `-e TELEGRAM_SESSION_NAME=your_session_file_name` instead of `TELEGRAM_SESSION_STRING` if you prefer file-based sessions (requires volume mounting, see `docker-compose.yml` for an example).
 *   The `-it` flags are crucial for interacting with the server.
 
+### HTTP OAuth
+
+When `MCP_TRANSPORT=http`, OAuth protection is enabled by default. The server publishes the MCP and OAuth discovery endpoints required by MCP clients:
+
+- `/.well-known/oauth-protected-resource`
+- `/.well-known/oauth-authorization-server`
+- `/register`
+- `/authorize`
+- `/token`
+
+Set these environment variables for HTTP deployments:
+
+```bash
+MCP_TRANSPORT=http
+MCP_PORT=8000
+MCP_PATH=/mcp
+MCP_PUBLIC_URL=https://your-public-host.example
+MCP_OAUTH_AUTH_CODE=choose-a-long-random-approval-code
+```
+
+Clients dynamically register at `/register`, open `/authorize` with PKCE, and exchange the returned code at `/token`. The `/mcp` endpoint requires `Authorization: Bearer <access_token>` and returns `WWW-Authenticate` with `resource_metadata` when a token is missing or invalid.
+
+For local development only, `MCP_OAUTH_AUTO_APPROVE=true` skips the approval-code form. To temporarily restore the previous unauthenticated HTTP behavior, set `MCP_OAUTH_ENABLED=false`.
+
 ---
 
 ## ⚙️ Configuration for Claude & Cursor
