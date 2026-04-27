@@ -96,6 +96,7 @@ mcp = FastMCP(
     "telegram",
     host=os.getenv("MCP_HOST", "0.0.0.0"),
     port=int(os.getenv("MCP_PORT", "8000")),
+    streamable_http_path=os.getenv("MCP_PATH", "/mcp"),
 )
 
 
