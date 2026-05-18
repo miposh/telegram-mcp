@@ -223,7 +223,16 @@ async def _main() -> None:
                 file=sys.stderr,
             )
 
-        await _serve(transport)
+        # Fork addition: on http, MCP_OAUTH_ENABLED (default on) serves the
+        # streamable HTTP app behind our OAuth 2.1 server so the tunnelled
+        # public endpoint is not left unauthenticated.
+        from telegram_mcp.oauth import oauth_http_enabled, run_oauth_http_server
+
+        if transport == "http" and oauth_http_enabled():
+            _configure_transport_security()
+            await run_oauth_http_server()
+        else:
+            await _serve(transport)
     except Exception as e:
         print(f"Error starting client: {e}", file=sys.stderr)
         if isinstance(e, sqlite3.OperationalError) and "database is locked" in str(e):

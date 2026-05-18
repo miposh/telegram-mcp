@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   telegram-mcp:
     build:
@@ -7,18 +5,29 @@ services:
       dockerfile: Dockerfile
       target: production
     container_name: telegram-mcp
-    # Load environment variables from a .env file in the same directory
+    restart: unless-stopped
     env_file:
       - .env
     # Serve streamable HTTP so one long-lived container is shared by all MCP
     # clients (see the Transports section in README.md). MCP_HOST must be
-    # 0.0.0.0 inside the container for the published port to work.
+    # 0.0.0.0 inside the container so the cloudflared sidecar can reach it.
     environment:
-      MCP_TRANSPORT: http
-      MCP_HOST: 0.0.0.0
-    # The endpoint is unauthenticated — publish on localhost only.
-    ports:
-      - "127.0.0.1:8765:8765"
+      - MCP_TRANSPORT=http
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8000
+      - MCP_PATH=${MCP_PATH}
+      - MCP_PUBLIC_URL=${MCP_PUBLIC_URL}
+      - MCP_ALLOWED_HOSTS=${MCP_ALLOWED_HOSTS}
+      - MCP_ALLOWED_ORIGINS=${MCP_ALLOWED_ORIGINS}
+      - MCP_OAUTH_ENABLED=${MCP_OAUTH_ENABLED:-true}
+      - MCP_OAUTH_AUTH_CODE=${MCP_OAUTH_AUTH_CODE}
+      - MCP_OAUTH_AUTO_APPROVE=${MCP_OAUTH_AUTO_APPROVE:-false}
+      - TELEGRAM_API_ID=${TELEGRAM_API_ID}
+      - TELEGRAM_API_HASH=${TELEGRAM_API_HASH}
+      - TELEGRAM_SESSION_STRING=${TELEGRAM_SESSION_STRING}
+    # Reached through the cloudflared tunnel only — no host port published.
+    expose:
+      - "8000"
     # Optional: Uncomment the following lines to mount a local directory
     # for persisting the Telegram session file if NOT using TELEGRAM_SESSION_STRING.
     # Replace './telegram_sessions' with your desired host path.
@@ -33,4 +42,10 @@ services:
       # Host directory must be readable/writable by uid 1000 (appuser):
       #   mkdir -p ./transcript_cache && chown 1000:1000 ./transcript_cache
       - ./transcript_cache:/app/data/transcripts
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: telegram-mcp-tunnel
     restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - telegram-mcp

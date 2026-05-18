@@ -155,7 +155,13 @@ TELEGRAM_API_HASH = os.getenv("TELEGRAM_API_HASH")
 # The shared HTTP service can be consumed by long-lived MCP clients. Stateless requests keep
 # those clients usable across server-process restarts instead of rejecting their next call
 # with "No valid session ID provided". Stdio transport remains unaffected.
-mcp = FastMCP("telegram", stateless_http=True)
+mcp = FastMCP(
+    "telegram",
+    stateless_http=True,
+    host=os.getenv("MCP_HOST", "0.0.0.0"),
+    port=int(os.getenv("MCP_PORT", "8000")),
+    streamable_http_path=os.getenv("MCP_PATH") or "/mcp",
+)
 
 # Annotate all tool results with audience=["user"] so MCP clients know
 # the content is user-generated data, not instructions for the model.
